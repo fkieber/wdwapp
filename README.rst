@@ -34,8 +34,10 @@ $ wdwapp_initialize_db development.ini
 Put in a cron job this command :
 $ wdwapp_cron /path/to/development.ini
 
-For a contab insert this line :
-*/15  *  *  *  * wdwapp_cron /path/to/development.ini
+Because by default data is saved every 15 minutes, it is a good idea to call
+the cron job 3 minutes after. This mean every hour at 3, 18, 33 and 48 minute.
+To do tis with con insert this line in the crontab :
+3,18,33,48  *  *  *  * wdwapp_cron /path/to/development.ini
 
 
 DO NOT USE the rest of this file =============================================

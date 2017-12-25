@@ -4,14 +4,12 @@ import os
 import sys
 import transaction
 import requests
-import logging
 import json
+
+import logging
 
 from datetime import datetime
 from decimal import Decimal
-
-import smtplib
-from email.message import EmailMessage
 
 import urllib3
 urllib3.disable_warnings()
@@ -37,6 +35,7 @@ from .models import (
     Compute,
     WeatherData,
     ToIgnore,
+    SensorData,
 )
 
 class Cron(object):
@@ -62,17 +61,10 @@ class Cron(object):
         # Read configuration data from ini file
         self.intrv = int(settings['wd.interval']) * 60  # In seconds
         self.t_unit = settings['wd.t_unit']
-        self.bkpf = settings['service_get.backup_file']
         self.mailto = False
         if 'email.to' in settings:
             self.mailto = settings['email.to']
             self.mailfrm = settings['email.from']
-        self.smsurl = False
-        if 'sms.url' in settings:
-            self.smsurl = settings['sms.url']
-            self.smsuser = settings['sms.user']
-            self.smspass = settings['sms.pass']
-            self.logger.debug('SMS url found : ' + self.smsurl)
 
         # Read key/value to identify sensors to ignore
         self.ign = {}
@@ -85,61 +77,6 @@ class Cron(object):
 
 
 
-    def log(self, txt, critical=False, mail=False, sms=False):
-
-        """Logging method
-            Send txt to log and if critical is TRUE :
-            - to Email if email.adr is defined
-            - to SMS if sms.url is defined
-        """
-
-        # Output to log
-        self.logger.debug(txt)
-
-        # Critical messages are send every where
-        subject = "wdwapp: info"
-        if critical:
-            subject = "wdwapp: critical error"
-            mail = True
-            sms = True
-
-        # Output to mail
-        if mail and self.mailto is not False:
-            msg = EmailMessage()
-            msg.set_content(txt)
-            msg['Subject'] = subject
-            msg['To'] = self.mailto
-            msg['From'] = self.mailfrm
-            s = smtplib.SMTP('localhost')
-            s.send_message(msg)
-            s.quit()
-
-        # Output to SMS
-        if sms and self.smsurl is not False:
-            err = False
-            try:
-                r = requests.get(self.smsurl, params = {
-                    'user': self.smsuser,
-                    'pass': self.smspass,
-                    'msg': txt})
-            except:
-                err = str(sys.exc_info()[1])
-            else:
-                if r.status_code != 200:
-                    if  r.status_code == 400:
-                        err = 'missing parameter.'
-                    elif r.status_code == 402:
-                        err = 'To many SMS sent in a to short time.'
-                    elif r.status_code == 403:
-                        err = 'Service not activated or invalid key.'
-                    elif r.status_code == 500:
-                        err = 'Server error. Try later.'
-                    else:
-                        err = 'Unknown error.'
-            if err is not False:
-                self.logger.debug('Cannot send SMS : ' + err)
-        
-
     def get(self):
 
         """This service read data from servers.
@@ -147,14 +84,8 @@ class Cron(object):
             data are retrieved and processed.
         """
 
-        ret = {}
-
-        ret['backup file'] = self.bkpf
-
         for self.srv in self.dbs.query(Server).filter_by(
                 active = True):
-
-            ret['server ' + str(self.srv.id)] = self.srv.name
 
             # Read data from this server
             err = False
@@ -166,29 +97,26 @@ class Cron(object):
                 if rda.status_code != 200:
                     err = 'Return code ' + str(rda.status_code)
             if err is not False:
-                msg = 'wdwapp: cannot read server {srv} because "{err}".\n' + \
-                            'Server deactivated.'
-                self.log(msg.format(srv = self.srv.name, err = err), True)
+                self.logger.critical('wdwapp: cannot read server {srv} '
+                    'because "{err}".\n'
+                    'Server deactivated.'.format(
+                        srv = self.srv.name, err = err))
                 # deactivate this server
                 self.srv.active = False
             else:
                 i1 = 0
                 for line in rda.iter_lines():
                     i1 += 1
-                    self.log("Process input line {}.".format(i1))
+                    self.logger.debug("Process input line {}.".format(i1))
                     try:
                         self.dta = json.loads(line.decode('utf_8'))
                     except:
-                        self.log("Invalid json format of line :\n{line}".
-                            format(line = line.decode('utf_8')), mail=True)
+                        self.logger.error("Invalid json format of line :\n{line}".
+                            format(line = line.decode('utf_8')))
                     self.trt_dta()
                     #self.dbs.flush()
                     self.dbs.commit()
                     #transaction.commit()
-                ret['nbr read ' + self.srv.name] = i1
-
-
-        return ret
 
 
     def trt_dta(self):
@@ -203,15 +131,6 @@ class Cron(object):
             with new flag on.
         """
 
-        # Time and model are mandatory
-        if 'time' not in self.dta:
-            self.log("Entry without 'time' : " + str(self.dta))
-            return
-        if 'model' not in self.dta:
-            self.log("Entry without 'model' : " + str(self.dta))
-            return
-        model = self.dta['model']
-
         # Filter data that are ignored
         # Data is compared against the to_ignore table.
         # If the data contain all key/value with the same gid,
@@ -224,6 +143,15 @@ class Cron(object):
                     break
             if found:
                 return
+
+        # Time and model are mandatory
+        if 'time' not in self.dta:
+            self.logger.error("Entry without 'time' : " + str(self.dta))
+            return
+        if 'model' not in self.dta:
+            self.logger.error("Entry without 'model' : " + str(self.dta))
+            return
+        model = self.dta['model']
 
         # default for non mandatory data
         devid = None
@@ -247,7 +175,7 @@ class Cron(object):
             
         except sqlalchemy.orm.exc.NoResultFound:
             
-            self.log('Sensor ' + str(self.dta) + ' Not found')
+            self.logger.debug('Sensor ' + str(self.dta) + ' Not found')
 
             # Add new sensor
             cnt = self.dbs.query(Sensor).count()
@@ -266,12 +194,12 @@ class Cron(object):
                 last_seen = self.moment,
                 nbr_seen = 0,
                 new = True))
-            self.log("New sensor '" + name + "' found and added.\n" +
-                'Data : ' + str(self.dta), True)
+            self.logger.warning("New sensor '" + name + "' found and added.\n" +
+                'Data : ' + str(self.dta))
                     
         except sqlalchemy.orm.exc.MultipleResultsFound:
             
-            self.log('Sensor ' + str(self.dta) + ' Found multiple time')
+            self.logger.error('Sensor ' + str(self.dta) + ' Found multiple time')
             
         else:
 
@@ -296,8 +224,9 @@ class Cron(object):
                     return
 
             # Backup this data for later use
-            with open(self.bkpf, 'a') as f:
-                f.write(str(self.dta)+ '\n')
+            self.dbs.add(SensorData(sid = self.sens.id,
+                timestp = self.moment,
+                data = str(self.dta)))
 
     def compute(self):
 
@@ -321,14 +250,20 @@ class Cron(object):
 
                 # If OK update sensor
                 if self.sens.bat_low:
+                    self.logger.warning('Warning: battery level from sensor '
+                        '"{sensor}" in location "{loc}" is again OK.'.format(
+                            sensor = self.sens.name,
+                            loc = self.loc.name))
                     self.sens.bat_low = False
                     
             else:
 
                 # If it is the first time battery is not OK, send message
                 if not self.sens.bat_low:
-                    self.log('Warning: sensor "' + self.sens.name +
-                    '" battery level is LOW.', True)
+                    self.logger.critical('Warning: battery level from sensor '
+                        '"{sensor}" in location "{loc}" is LOW.'.format(
+                            sensor = self.sens.name,
+                            loc = self.loc.name))
                     self.sens.bat_low = True
 
         # Compute data and send alarms =======================================
@@ -442,20 +377,18 @@ class Cron(object):
 
                     # Temperature below minimum allowed ==> Alarm
                     if not self.cmpt.t_min:
-                        self.log('Warning: Temperature in location "{loc}" ' 
+                        self.logger.critical('Warning: Temperature in location "{loc}" ' 
                         'has passed below the minimum of {temp}.'.format(
                             loc = self.loc.name,
-                            temp = self.loc.t_min),
-                        True)
+                            temp = self.loc.t_min))
                         self.cmpt.t_min = True   # Alarm just one time
                 else:
                     # Reset previously alarm
                     if self.cmpt.t_min:
-                        self.log('Warning: Temperature in location "{loc}" ' 
+                        self.logger.warning('Warning: Temperature in location "{loc}" ' 
                         'is again over the minimum of {temp}.'.format(
                             loc = self.loc.name,
-                            temp = self.loc.t_min),
-                        True)
+                            temp = self.loc.t_min))
                         self.cmpt.t_min = False
 
             # Maximum alarm
@@ -464,20 +397,18 @@ class Cron(object):
 
                     # Temperature over maximum allowed ==> Alarm
                     if not self.cmpt.t_max:
-                        self.log('Warning: Temperature in location "{loc}" ' 
+                        self.logger.critical('Warning: Temperature in location "{loc}" ' 
                         'has exceeded the maximum of {temp}.'.format(
                             loc = self.loc.name,
-                            temp = self.loc.t_max),
-                        True)
+                            temp = self.loc.t_max))
                         self.cmpt.t_max = True   # Alarm just one time
                 else:
                     # Reset previously alarm
                     if self.cmpt.t_max:
-                        self.log('Warning: Temperature in location "{loc}" ' 
+                        self.logger.warning('Warning: Temperature in location "{loc}" ' 
                         'is again under the maximum of {temp}.'.format(
                             loc = self.loc.name,
-                            temp = self.loc.t_max),
-                        True)
+                            temp = self.loc.t_max))
                         self.cmpt.t_max = False
 
 

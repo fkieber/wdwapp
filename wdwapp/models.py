@@ -192,6 +192,27 @@ class ToIgnore(Base):
     value           = Column(String(100),
                         doc="Value to match")
 
+class SensorData(Base):
+
+    """New sensor Data
+        Store unrecognized data (to purge regularly)
+        Can be used, for example, to reload data from new sensor after
+        it is activated or associated to a location.
+    """
+
+    __tablename__   = 'sensor_data'
+    
+    id              = Column(Integer, primary_key=True,
+                        doc="Location unique ID")
+    sid             = Column(Integer, ForeignKey('sensor.id'),
+                        index=True,
+                        doc="ID of sensor attached to this location")
+    timestp         = Column(DateTime, index=True,
+                        doc="Date time of reading")
+    data            = Column(Text,
+                        doc="Data as read from sensor")
+
+
 class Root(object):
     __acl__ = [(Allow, Everyone, 'view'),
                 (Allow, 'group:editors', 'edit')]
