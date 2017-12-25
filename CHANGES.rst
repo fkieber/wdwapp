@@ -1,7 +1,15 @@
 Change log
 ----------
 
-- **0.0.4** 2017/12/23
+- **0.0.5** 2017/12/xx
+
+    - Beginning with the webserver.
+      A first page with last datas is available (in french sorry).
+    - Data base update. Add long description to server.
+      Please run V004to005.sql available on http://static.frkb.fr/wdwapp
+    - Removed tests.
+
+- **0.0.4** 2017/12/25
 
 	- Remove return value.
     - Change logging system to manage different levels (debug, error, warning,
@@ -19,4 +27,3 @@ Change log
 - **0.0.1** 2017/12/21
 
 	First version.
-

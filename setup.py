@@ -22,12 +22,6 @@ requires = [
     'requests',
 ]
 
-tests_require = [
-    'WebTest >= 1.3.1',  # py3 compat
-    'pytest',
-    'pytest-cov',
-]
-
 setup(name = 'wdwapp',
     version = __version__,
     description = 'Webapps for recording and displaying weather data',
@@ -54,9 +48,6 @@ setup(name = 'wdwapp',
     packages = find_packages(),
     include_package_data = True,
     zip_safe = False,
-    extras_require = {
-        'testing': tests_require,
-    },
     install_requires = requires,
     entry_points = {
         'paste.app_factory': [

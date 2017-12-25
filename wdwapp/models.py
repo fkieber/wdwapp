@@ -38,6 +38,8 @@ class Server(Base):
                         doc="Server unique name")
     url             = Column(Text,
                         doc="URL where to get data")
+    long_desc       = Column(Text,
+                        doc="Description")
     active          = Column(Boolean,
                         doc="Is this server active (0/1)")
 
@@ -120,6 +122,29 @@ class Location(Base):
                         doc="Is this location active (0/1)")
 
 
+class WeatherData(Base):
+
+    "Table of weather data incoming from sensors"
+
+    __tablename__   = 'weather_data'
+    
+    timestp         = Column(DateTime, primary_key=True,
+                        doc="Date time of reading")
+    lid             = Column(Integer, ForeignKey('location.id'),
+                        primary_key=True,
+                        doc="ID in location table")
+    temperature     = Column(Numeric(5, 2),
+                        doc="Temperature been read")
+    humidity        = Column(Integer,
+                        doc="Humidity been read")
+    pressure        = Column(Numeric(5, 2),
+                        doc="Pressure been read")
+    t_dew           = Column(Numeric(5, 2),
+                        doc="Dew point calculated from temp & humidity")
+    t_feel          = Column(Numeric(5, 2),
+                        doc="feels like temp. calculated from temp. & humidity")
+
+
 class Compute(Base):
 
     "Table of temporary weather data used to compute average values"
@@ -149,29 +174,6 @@ class Compute(Base):
                         doc="Minimal temp alarm is triggered")
     t_max           = Column(Boolean,
                         doc="Maximal temp alarm is triggered")
-
-
-class WeatherData(Base):
-
-    "Table of weather data incoming from sensors"
-
-    __tablename__   = 'weather_data'
-    
-    timestp         = Column(DateTime, primary_key=True,
-                        doc="Date time of reading")
-    lid             = Column(Integer, ForeignKey('location.id'),
-                        primary_key=True,
-                        doc="ID in location table")
-    temperature     = Column(Numeric(5, 2),
-                        doc="Temperature been read")
-    humidity        = Column(Integer,
-                        doc="Humidity been read")
-    pressure        = Column(Numeric(5, 2),
-                        doc="Pressure been read")
-    t_dew           = Column(Numeric(5, 2),
-                        doc="Dew point calculated from temp & humidity")
-    t_feel          = Column(Numeric(5, 2),
-                        doc="feels like temp. calculated from temp. & humidity")
 
 
 class ToIgnore(Base):

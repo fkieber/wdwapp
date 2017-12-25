@@ -1,10 +1,19 @@
+import pdb
 import colander
 import deform.widget
 
 from pyramid.httpexceptions import HTTPFound
 from pyramid.view import view_config
 
-from .models import DBSession, WeatherData
+from .models import (
+    DBSession,
+    Location,
+    WeatherData,
+)
+
+from sqlalchemy import desc
+
+from datetime import datetime
 
 class WikiPage(colander.MappingSchema):
     title = colander.SchemaNode(colander.String())
@@ -13,7 +22,7 @@ class WikiPage(colander.MappingSchema):
         widget=deform.widget.RichTextWidget()
     )
 
-class WikiViews(object):
+class WeatherViews(object):
     def __init__(self, request):
         self.request = request
         self.mode = ''
@@ -30,15 +39,16 @@ class WikiViews(object):
     def reqts(self):
         return self.wiki_form.get_widget_resources()
 
-    @view_config(route_name='wiki_view', renderer='wiki_view.pt')
-    def wiki_view(self):
+    @view_config(route_name='overview', renderer='templates/overview.pt')
+    def overview(self):
         session = self.request.session
-        msg = ''
-        if 'msg' in session:
-            msg = session['msg']
-            del session['msg']
-        pages = DBSession.query(Page).order_by(Page.title)
-        return dict(title='Wiki View',pages=pages, msg=msg)
+        last_time = DBSession.query(WeatherData.timestp). \
+            order_by(desc(WeatherData.timestp)).first()
+        ltime = last_time.timestp.strftime('%H:%M')
+        datas = DBSession.query(Location.name, WeatherData.temperature, WeatherData.humidity, WeatherData.pressure). \
+            join(WeatherData). \
+            order_by(desc(WeatherData.timestp)).limit(5)
+        return dict(ltime=ltime, datas=datas)
     
     @view_config(route_name='wikipage_add',
                  renderer='wikipage_addedit.pt')
@@ -112,4 +122,13 @@ class WikiViews(object):
 
         return dict(page=page, form=form)
 
+    @view_config(route_name='home')
+    def home(self):
+        first = self.request.matchdict['first']
+        last = self.request.matchdict['last']
+        return {
+            'name': 'Home View',
+            'first': first,
+            'last': last
+        }
 
