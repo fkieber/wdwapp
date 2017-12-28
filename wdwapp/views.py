@@ -2,6 +2,8 @@ import pdb
 import colander
 import deform.widget
 
+from wdwapp import __version__, __year__
+
 from pyramid.httpexceptions import HTTPFound
 from pyramid.view import view_config
 
@@ -11,7 +13,7 @@ from .models import (
     WeatherData,
 )
 
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 from datetime import datetime
 
@@ -26,6 +28,9 @@ class WeatherViews(object):
     def __init__(self, request):
         self.request = request
         self.mode = ''
+        self.version = __version__
+        self.year = __year__
+
 
     @property
     def wiki_form(self):
@@ -41,15 +46,38 @@ class WeatherViews(object):
 
     @view_config(route_name='overview', renderer='templates/overview.pt')
     def overview(self):
+
+        # Load session data
         session = self.request.session
-        last_time = DBSession.query(WeatherData.timestp). \
-            order_by(desc(WeatherData.timestp)).first()
-        ltime = last_time.timestp.strftime('%H:%M')
-        datas = DBSession.query(Location.name, WeatherData.temperature, WeatherData.humidity, WeatherData.pressure). \
-            join(WeatherData). \
-            order_by(desc(WeatherData.timestp)).limit(5)
+
+        # Get last reading time
+        lt = DBSession.query(func.max(WeatherData.timestp))
+        #pdb.set_trace()
+        ltime = lt[0][0].strftime('%H:%M')
+        
+        # Retrieve and read last data for active locations
+        datas = []
+        for loc in DBSession.query(Location).filter_by(active = True).order_by('rank'):
+            lt = DBSession.query(func.max(WeatherData.timestp)).filter_by(lid = loc.id)[0][0]
+            wdt = DBSession.query(WeatherData).filter_by(lid = loc.id, timestp = lt)[0]
+            datas.append({'id': loc.id,
+                'name': loc.name,
+                'temperature': wdt.temperature,
+                'humidity': wdt.humidity})
+        #pdb.set_trace()
+
         return dict(ltime=ltime, datas=datas)
     
+    @view_config(route_name='detail', renderer='templates/detail.pt')
+    def detail(self):
+        lid = self.request.matchdict['lid']
+        lname = DBSession.query(Location.name).filter_by(id = lid)[0]
+        datas = DBSession.query(WeatherData).\
+                filter_by(lid = lid).\
+                filter(func.MINUTE(WeatherData.timestp) == 0).\
+                order_by(desc('timestp')).limit(24).all()
+        return dict(lname = lname, datas = datas)
+
     @view_config(route_name='wikipage_add',
                  renderer='wikipage_addedit.pt')
     def wikipage_add(self):
@@ -78,12 +106,6 @@ class WeatherViews(object):
             return HTTPFound(url)
 
         return dict(form=form)
-
-    @view_config(route_name='wikipage_view', renderer='wikipage_view.pt')
-    def wikipage_view(self):
-        uid = self.request.matchdict['uid']
-        page = DBSession.query(Page).filter_by(uid=uid).one()
-        return dict(page=page)
 
     @view_config(route_name='wikipage_edit',
                  renderer='wikipage_addedit.pt')

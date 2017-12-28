@@ -1,7 +1,14 @@
 Change log
 ----------
 
-- **0.0.5** 2017/12/xx
+- **0.0.7** 2017/12/26
+
+    - Data base update. Add rank and grah color to location.
+      Please run V006to007.sql available on http://static.frkb.fr/wdwapp
+    - Secure humidity reading. Cannot be below 1 or upper 100.
+    - Added detail view of last 24h data for a location.
+
+- **0.0.6** 2017/12/26
 
     - Beginning with the webserver.
       A first page with last datas is available (in french sorry).

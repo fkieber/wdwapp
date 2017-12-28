@@ -103,6 +103,8 @@ class Location(Base):
     
     id              = Column(Integer, primary_key=True,
                         doc="Location unique ID")
+    rank              = Column(Integer, index=True,
+                        doc="Sort rank")
     name            = Column(String(20), unique=True,
                         doc="Location unique name")
     short_desc      = Column(String(100),
@@ -118,6 +120,8 @@ class Location(Base):
                         doc="Temperature above which alarm is triggered (or None)")
     on_graph        = Column(Boolean,
                         doc="Is this location on graph (0/1)")
+    gr_color        = Column(String(6),
+                        doc="Color on graph")
     active          = Column(Boolean,
                         doc="Is this location active (0/1)")
 

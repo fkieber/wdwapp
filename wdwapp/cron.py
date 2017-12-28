@@ -103,6 +103,7 @@ class Cron(object):
                         srv = self.srv.name, err = err))
                 # deactivate this server
                 self.srv.active = False
+                self.dbs.commit()
             else:
                 i1 = 0
                 for line in rda.iter_lines():
@@ -298,7 +299,12 @@ class Cron(object):
             self.trigger_alarm(temp = temp)
 
         if self.sens.cap_h:  # Humidity
-            self.cmpt.h_sum   += round(self.dta[self.sens.cap_h], 2)
+            h = round(self.dta[self.sens.cap_h], 2)
+            if h < 1:
+                h = 0
+            if h > 100:
+                h = 100
+            self.cmpt.h_sum   += h
             self.cmpt.h_count += 1
 
         if self.sens.cap_p:  # Pressure

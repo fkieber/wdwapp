@@ -1,4 +1,5 @@
-__version__ = '0.0.4'
+__version__ = '0.0.7'
+__year__ = 2017
 
 def main(global_config, **settings):
 
@@ -22,8 +23,8 @@ def main(global_config, **settings):
 
     # Routes for web site
     config.add_route('overview', '/')
+    config.add_route('detail', '/detail/{lid}')
     config.add_route('wikipage_add', '/add')
-    config.add_route('wikipage_view', '/{uid}')
     config.add_route('wikipage_edit', '/{uid}/edit')
     config.add_route('home', '/howdy/{first}/{last}')
 

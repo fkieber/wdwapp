@@ -28,7 +28,7 @@
 	<div class="container">
 		<div class="row">
 			<div class="col-md-2">
-				<h1>Service Météo</h1>
+				<h1><a href="${request.route_url('overview')}">Service Météo</a></h1>
 			</div>
 			<div class="col-md-10">
 				<div metal:define-slot="content">No content</div>
@@ -36,7 +36,7 @@
 		</div>
 		<div class="row">
 			<div class="copyright">
-				Copyright &copy; frkb.fr
+				Copyright &copy; ${view.year} frkb.fr - Version ${view.version}
 			</div>
 		</div>
 	</div>
