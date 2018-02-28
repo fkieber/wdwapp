@@ -1,7 +1,20 @@
 Change log
 ----------
 
-- **0.0.7** 2017/12/26
+- **0.0.8** 2018/02/28
+
+    - use of gunicorn as web-server.
+    - Data base update. Suppress unique index on sensor id in location.
+      Please run V007to008.sql available on http://static.frkb.fr/wdwapp
+    - Detect and send alarms only every wd.interval.
+      
+    Corrections :
+    - When new sensor is detected save first data received.
+    - Internal Server Error after lost MySql connection due to interactive
+      timeout.
+      Resolved by adding pool_pre_ping=True to create_engine.
+
+- **0.0.7** 2017/12/28
 
     - Data base update. Add rank and grah color to location.
       Please run V006to007.sql available on http://static.frkb.fr/wdwapp

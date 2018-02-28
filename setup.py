@@ -16,10 +16,12 @@ requires = [
     'deform',
     'sqlalchemy',
     'pyramid_tm',
+    'gunicorn',
     'zope.sqlalchemy',
     'mysqlclient',
     'meteocalc',
     'requests',
+    'bcrypt',
 ]
 
 setup(name = 'wdwapp',

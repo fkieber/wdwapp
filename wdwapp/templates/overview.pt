@@ -1,7 +1,7 @@
 <div metal:use-macro="load: layout.pt">
 			<div metal:fill-slot="content">
 				<div class="content">
-					<h3>Données actuelles à ${ltime}</h3>
+					<h3>Données du ${ltime}</h3>
                     <table class="table">
                         <thead>
                             <tr>
@@ -17,7 +17,7 @@
                                         ${data.name}
                                     </a>
                                 </td>
-                                <td>${round(data.temperature, 1)} °C</td>
+                                <td>${round(data.temperature, 1)} ${data.tunit}</td>
                                 <td>${data.humidity} %</td>
                             </tr>
                         </tbody>

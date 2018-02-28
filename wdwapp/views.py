@@ -1,4 +1,16 @@
-import pdb
+""" Main programm 
+
+Show wheater data and mamange configuration
+
+To do
+- Add message to send with alarm
+- Add authentication to allow some users to change values and/or
+  configuration data.
+- Added auth.secret in ini files. Please merge your ini files with them on
+  http://static.frkb.fr/wdwapp
+- Add .ini parameter to define period of detail view.
+"""
+#import pdb
 import colander
 import deform.widget
 
@@ -7,9 +19,16 @@ from wdwapp import __version__, __year__
 from pyramid.httpexceptions import HTTPFound
 from pyramid.view import view_config
 
+from pyramid.httpexceptions import HTTPFound
+from pyramid.security import (
+    remember,
+    forget,
+)
+
 from .models import (
     DBSession,
     Location,
+    Sensor,
     WeatherData,
 )
 
@@ -30,6 +49,7 @@ class WeatherViews(object):
         self.mode = ''
         self.version = __version__
         self.year = __year__
+        self.stg = self.request.registry.settings
 
 
     @property
@@ -40,12 +60,17 @@ class WeatherViews(object):
             btns.append('delete')
         return deform.Form(schema, buttons=btns)
 
+
     @property
     def reqts(self):
         return self.wiki_form.get_widget_resources()
 
+
     @view_config(route_name='overview', renderer='templates/overview.pt')
     def overview(self):
+
+        """Main view with an overview of locations
+        """
 
         # Load session data
         session = self.request.session
@@ -53,7 +78,7 @@ class WeatherViews(object):
         # Get last reading time
         lt = DBSession.query(func.max(WeatherData.timestp))
         #pdb.set_trace()
-        ltime = lt[0][0].strftime('%H:%M')
+        ltime = lt[0][0].strftime('%d %b à %H:%M')
         
         # Retrieve and read last data for active locations
         datas = []
@@ -63,20 +88,29 @@ class WeatherViews(object):
             datas.append({'id': loc.id,
                 'name': loc.name,
                 'temperature': wdt.temperature,
-                'humidity': wdt.humidity})
+                'humidity': wdt.humidity,
+                'tunit': '°' + self.stg['wd.t_unit'].upper()})
         #pdb.set_trace()
 
         return dict(ltime=ltime, datas=datas)
+
     
     @view_config(route_name='detail', renderer='templates/detail.pt')
     def detail(self):
+
+        """Detail of a location.
+            Display the list of last 24h.
+        """
+        
         lid = self.request.matchdict['lid']
-        lname = DBSession.query(Location.name).filter_by(id = lid)[0]
+        lname = DBSession.query(Location.name, Location.sid).filter_by(id = lid)[0][0]
         datas = DBSession.query(WeatherData).\
                 filter_by(lid = lid).\
                 filter(func.MINUTE(WeatherData.timestp) == 0).\
-                order_by(desc('timestp')).limit(24).all()
-        return dict(lname = lname, datas = datas)
+                order_by(desc('timestp')).limit(96).all()
+        return dict(lname = lname, datas = datas,
+            tunit = '°' + self.stg['wd.t_unit'].upper())
+
 
     @view_config(route_name='wikipage_add',
                  renderer='wikipage_addedit.pt')

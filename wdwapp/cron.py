@@ -1,5 +1,11 @@
-import pdb
+""" Cron job that retrieve weather data
 
+To do
+- Alarm when sensor not responding since xxx time.
+- Add an option to deactivate server after some time when it is not responding.
+"""
+
+#mport pdb
 import os
 import sys
 import transaction
@@ -21,7 +27,7 @@ from pyramid.paster import (
     setup_logging,
 )
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, func
 
 import sqlalchemy.orm.exc
 
@@ -193,11 +199,17 @@ class Cron(object):
                 channel = channel,
                 first_seen = self.moment,
                 last_seen = self.moment,
-                nbr_seen = 0,
+                nbr_seen = 1,
                 new = True))
             self.logger.warning("New sensor '" + name + "' found and added.\n" +
                 'Data : ' + str(self.dta))
                     
+            # Backup first data for later use
+            sens = self.dbs.query(func.max(Sensor.id))
+            self.dbs.add(SensorData(sid = sens[0][0],
+                timestp = self.moment,
+                data = str(self.dta)))
+
         except sqlalchemy.orm.exc.MultipleResultsFound:
             
             self.logger.error('Sensor ' + str(self.dta) + ' Found multiple time')
@@ -242,6 +254,9 @@ class Cron(object):
                 self.loc : Location
         """
 
+        # Units ==============================================================
+        self.tunit = '°' + self.t_unit.upper();
+
         # Battery level ======================================================
 
         # Read battery level if available
@@ -251,8 +266,9 @@ class Cron(object):
 
                 # If OK update sensor
                 if self.sens.bat_low:
-                    self.logger.warning('Warning: battery level from sensor '
+                    self.logger.warning('Warning: At {tmp}, battery level from sensor '
                         '"{sensor}" in location "{loc}" is again OK.'.format(
+                            tmp = self.moment,
                             sensor = self.sens.name,
                             loc = self.loc.name))
                     self.sens.bat_low = False
@@ -261,15 +277,15 @@ class Cron(object):
 
                 # If it is the first time battery is not OK, send message
                 if not self.sens.bat_low:
-                    self.logger.critical('Warning: battery level from sensor '
+                    self.logger.critical('Warning: At {tmp}, battery level from sensor '
                         '"{sensor}" in location "{loc}" is LOW.'.format(
+                            tmp = self.moment,
                             sensor = self.sens.name,
                             loc = self.loc.name))
                     self.sens.bat_low = True
 
         # Compute data and send alarms =======================================
         tmst = self.moment.timestamp()  # Convert to Unix time stamp
-        #pdb.set_trace()
 
         # Get last reading for the current location
         try:
@@ -296,7 +312,6 @@ class Cron(object):
             temp = Decimal(self.dta[self.sens.cap_t])
             self.cmpt.t_sum   += round(temp, 2)
             self.cmpt.t_count += 1
-            self.trigger_alarm(temp = temp)
 
         if self.sens.cap_h:  # Humidity
             h = round(self.dta[self.sens.cap_h], 2)
@@ -322,9 +337,10 @@ class Cron(object):
             else:
                 H = 0.0
             if self.cmpt.t_count > 0:
-                T0 = Temp(self.cmpt.t_sum / self.cmpt.t_count, self.sens.t_unit)
+                temp0 = self.cmpt.t_sum / self.cmpt.t_count
             else:
-                T0 = Temp(0, self.t_unit)
+                temp0 = 0
+            T0 = Temp(temp0, self.sens.t_unit)
             TD = dew_point(temperature=T0, humidity=H)
             TF = heat_index(temperature=T0, humidity=H)
             if self.t_unit == 'c':
@@ -355,6 +371,7 @@ class Cron(object):
                     pressure = round(P, 2),
                     t_dew = round(TD, 2),
                     t_feel = round(TF, 2)))
+                self.trigger_alarm(timestp, temp = temp0)
 
             # Clear compute data
             self.cmpt.start = self.cmpt.last
@@ -367,7 +384,7 @@ class Cron(object):
             self.cmpt.p_count = 0
 
 
-    def trigger_alarm(self, temp=None):
+    def trigger_alarm(self, timestp, temp=None):
 
         """Trigger alarm for temperature, pressure or humidity
 
@@ -383,18 +400,22 @@ class Cron(object):
 
                     # Temperature below minimum allowed ==> Alarm
                     if not self.cmpt.t_min:
-                        self.logger.critical('Warning: Temperature in location "{loc}" ' 
-                        'has passed below the minimum of {temp}.'.format(
+                        self.logger.critical('Warning: At {tmp}, temperature in location "{loc}" ' 
+                        'has passed below the minimum of {temp} {unit}.'.format(
+                            tmp = timestp,
                             loc = self.loc.name,
-                            temp = self.loc.t_min))
+                            temp = self.loc.t_min,
+                            unit = self.tunit))
                         self.cmpt.t_min = True   # Alarm just one time
                 else:
                     # Reset previously alarm
                     if self.cmpt.t_min:
-                        self.logger.warning('Warning: Temperature in location "{loc}" ' 
-                        'is again over the minimum of {temp}.'.format(
+                        self.logger.warning('Warning: At {tmp}, temperature in location "{loc}" ' 
+                        'is again over the minimum of {temp}  {unit}.'.format(
+                            tmp = timestp,
                             loc = self.loc.name,
-                            temp = self.loc.t_min))
+                            temp = self.loc.t_min,
+                            unit = self.tunit))
                         self.cmpt.t_min = False
 
             # Maximum alarm
@@ -403,18 +424,22 @@ class Cron(object):
 
                     # Temperature over maximum allowed ==> Alarm
                     if not self.cmpt.t_max:
-                        self.logger.critical('Warning: Temperature in location "{loc}" ' 
-                        'has exceeded the maximum of {temp}.'.format(
+                        self.logger.critical('Warning: At {tmp}, temperature in location "{loc}" ' 
+                        'has exceeded the maximum of {temp}  {unit}.'.format(
+                            tmp = timestp,
                             loc = self.loc.name,
-                            temp = self.loc.t_max))
+                            temp = self.loc.t_max,
+                            unit = self.tunit))
                         self.cmpt.t_max = True   # Alarm just one time
                 else:
                     # Reset previously alarm
                     if self.cmpt.t_max:
-                        self.logger.warning('Warning: Temperature in location "{loc}" ' 
-                        'is again under the maximum of {temp}.'.format(
+                        self.logger.warning('Warning: At {tmp}, temperature in location "{loc}" ' 
+                        'is again under the maximum of {temp}  {unit}.'.format(
+                            tmp = timestp,
                             loc = self.loc.name,
-                            temp = self.loc.t_max))
+                            temp = self.loc.t_max,
+                            unit = self.tunit))
                         self.cmpt.t_max = False
 
 

@@ -39,6 +39,10 @@ the cron job 3 minutes after. This mean every hour at 3, 18, 33 and 48 minute.
 To do tis with con insert this line in the crontab :
 3,18,33,48  *  *  *  * wdwapp_cron /path/to/development.ini
 
+Start web server :
+$ gunicorn --paste development.ini
+
+
 
 DO NOT USE the rest of this file =============================================
 

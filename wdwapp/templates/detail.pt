@@ -1,19 +1,19 @@
 <div metal:use-macro="load: layout.pt">
 			<div metal:fill-slot="content">
 				<div class="content">
-					<h3>Détail de ${lname}</h3>
+					<h3>Détail ${lname}</h3>
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Heure</th>
+                                <th>Quand</th>
                                 <th>Température</th>
                                 <th>Humidité</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr tal:repeat="data datas">
-                                <td>${data.timestp.strftime('%H:%M')}</td>
-                                <td>${round(data.temperature, 1)} °C</td>
+                                <td>${data.timestp.strftime('%d %b %H:%M')}</td>
+                                <td>${round(data.temperature, 1)} ${tunit}</td>
                                 <td>${data.humidity} %</td>
                             </tr>
                         </tbody>
