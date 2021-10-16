@@ -1,7 +1,10 @@
 Change log
 ----------
 
-- **0.1.0** 2021/02/28
+- **0.1.1** 2021/10/16
+	- Change display order in overview
+	
+- **0.1.0** 2021/10/15
 	
 	- Add two year digit in date of detail.
 	- Add battery life data (last change, number of change).
