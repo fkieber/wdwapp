@@ -15,8 +15,8 @@ $ sudo dnf install gcc
 $ sudo dnf install redhat-rpm-config
 $ pip install wdwapp
 
-Download development.ini file from : http://static.frkb.fr/wdwapp
-Exemple. Do : wget http://static.frkb.fr/wdwapp/development.ini
+Download development.ini file from : https://static.frkb.fr/wdwapp  
+Example. Do : wget https://static.frkb.fr/wdwapp/development.ini
 
 Adapt this file for your need.
 

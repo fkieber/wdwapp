@@ -30,6 +30,7 @@ setup(name = 'wdwapp',
     version = __version__,
     description = 'Webapps for recording and displaying weather data',
     long_description = README + '\n\n' + CHANGES,
+    long_description_content_type="text/markdown",
     author = 'Frédéric KIEBER',
     author_email = 'contact@frkb.fr',
     license = 'MIT',
@@ -62,8 +63,8 @@ setup(name = 'wdwapp',
             'wdwapp_cron = wdwapp.cron:main',
         ],
     },
-    data_files = [
-		('alembic', glob('alembic/**/*', recursive=True)),
-	],
+    #data_files = [
+	#	('alembic', glob('alembic/**/*', recursive=True)),
+	#],
 )
 

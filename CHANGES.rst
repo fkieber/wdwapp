@@ -1,8 +1,11 @@
 Change log
 ----------
 
-- **0.1.1** 2021/10/16
+- **0.1.2** 2021/10/16
 	- Change display order in overview
+	- Correction of description doc type in setup.py
+	- Correction of URL to https
+	- Update version in __init__.py
 	
 - **0.1.0** 2021/10/15
 	
