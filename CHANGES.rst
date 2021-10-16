@@ -1,6 +1,14 @@
 Change log
 ----------
 
+- **0.1.0** 2021/02/28
+	
+	- Add two year digit in date of detail.
+	- Add battery life data (last change, number of change).
+	- Add display of battery level as a icon.
+	- Add display of accuracy of data. If data is up to date as a icon.
+	- Add new config value " in .ini file 
+
 - **0.0.8** 2018/02/28
 
     - use of gunicorn as web-server.

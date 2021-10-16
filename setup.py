@@ -1,6 +1,7 @@
 import os
 
 from setuptools import setup, find_packages
+from glob import glob
 
 from wdwapp import __version__
 
@@ -22,6 +23,7 @@ requires = [
     'meteocalc',
     'requests',
     'bcrypt',
+    'alembic',
 ]
 
 setup(name = 'wdwapp',
@@ -60,5 +62,8 @@ setup(name = 'wdwapp',
             'wdwapp_cron = wdwapp.cron:main',
         ],
     },
+    data_files = [
+		('alembic', glob('alembic/**/*', recursive=True)),
+	],
 )
 

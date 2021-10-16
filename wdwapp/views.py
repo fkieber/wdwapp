@@ -10,7 +10,7 @@ To do
   http://static.frkb.fr/wdwapp
 - Add .ini parameter to define period of detail view.
 """
-#import pdb
+import pdb
 import colander
 import deform.widget
 
@@ -34,7 +34,7 @@ from .models import (
 
 from sqlalchemy import desc, func
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class WikiPage(colander.MappingSchema):
     title = colander.SchemaNode(colander.String())
@@ -50,6 +50,9 @@ class WeatherViews(object):
         self.version = __version__
         self.year = __year__
         self.stg = self.request.registry.settings
+        self.t_unit = self.stg['wd.t_unit'].upper()
+        minutes = int(self.stg['wd.max_data_age'])
+        self.max_age = timedelta(minutes=minutes)
 
 
     @property
@@ -80,16 +83,39 @@ class WeatherViews(object):
         #pdb.set_trace()
         ltime = lt[0][0].strftime('%d %b à %H:%M')
         
+        # Calculate max oldest data
+        
+        
         # Retrieve and read last data for active locations
         datas = []
         for loc in DBSession.query(Location).filter_by(active = True).order_by('rank'):
+            
+            # Read location data
             lt = DBSession.query(func.max(WeatherData.timestp)).filter_by(lid = loc.id)[0][0]
             wdt = DBSession.query(WeatherData).filter_by(lid = loc.id, timestp = lt)[0]
+            sns = DBSession.query(Sensor).filter_by(id = loc.sid)[0]
+            
+            # Decode battery level
+            if not sns.bat_low:
+                batlevel = "OK"
+            else:
+                batlevel = "KO"
+            
+            # Verify if data is up to date
+            if sns.last_seen < datetime.now() - self.max_age:
+                uptodate = 'KO'
+            else:
+                uptodate = 'OK'
+            
+            
+            # Fill template data
             datas.append({'id': loc.id,
                 'name': loc.name,
                 'temperature': wdt.temperature,
                 'humidity': wdt.humidity,
-                'tunit': '°' + self.stg['wd.t_unit'].upper()})
+                'tunit': '°' + self.t_unit,
+                'bat_level': batlevel,
+                'uptodate': uptodate })
         #pdb.set_trace()
 
         return dict(ltime=ltime, datas=datas)
@@ -109,7 +135,7 @@ class WeatherViews(object):
                 filter(func.MINUTE(WeatherData.timestp) == 0).\
                 order_by(desc('timestp')).limit(96).all()
         return dict(lname = lname, datas = datas,
-            tunit = '°' + self.stg['wd.t_unit'].upper())
+            tunit = '°' + self.t_unit)
 
 
     @view_config(route_name='wikipage_add',

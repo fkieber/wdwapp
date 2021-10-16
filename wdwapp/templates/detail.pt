@@ -12,7 +12,7 @@
                         </thead>
                         <tbody>
                             <tr tal:repeat="data datas">
-                                <td>${data.timestp.strftime('%d %b %H:%M')}</td>
+                                <td>${data.timestp.strftime('%d %b %y %H:%M')}</td>
                                 <td>${round(data.temperature, 1)} ${tunit}</td>
                                 <td>${data.humidity} %</td>
                             </tr>

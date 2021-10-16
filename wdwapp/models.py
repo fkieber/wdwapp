@@ -20,9 +20,12 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
-from zope.sqlalchemy import ZopeTransactionExtension
-
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+# Le 3.10.2020 selon https://pypi.org/project/zope.sqlalchemy/#id3
+# from zope.sqlalchemy import ZopeTransactionExtension
+# DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+from zope.sqlalchemy import register
+DBSession = scoped_session(sessionmaker())
+register(DBSession)
 Base = declarative_base()
 
 
@@ -81,6 +84,10 @@ class Sensor(Base):
                         doc="This sensor give battery level (None or Id string|OK string)")
     bat_low         = Column(Boolean,
                         doc="Battery level LOW (0/1)")
+    last_bat_chg    = Column(DateTime,
+                        doc="Last time battery was changed for this sensor")
+    nbr_bat_chg     = Column(Integer,
+                        doc="Number of time battery was changed for this sensor")
 
     # Capabilities
     cap_h           = Column(String(100),
