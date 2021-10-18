@@ -1,4 +1,5 @@
 import os
+#import pdb
 
 from setuptools import setup, find_packages
 from glob import glob
@@ -25,16 +26,17 @@ requires = [
     'bcrypt',
     'alembic',
 ]
+#pdb.set_trace()
 
 setup(name = 'wdwapp',
     version = __version__,
     description = 'Webapps for recording and displaying weather data',
     long_description = README + '\n\n' + CHANGES,
-    long_description_content_type="text/markdown",
+    long_description_content_type = 'text/x-rst',
     author = 'Frédéric KIEBER',
     author_email = 'contact@frkb.fr',
     license = 'MIT',
-    url = '',
+    url = 'https://github.com/fkieber/wdwapp',
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers = [
         'Development Status :: 3 - Alpha',
@@ -64,7 +66,7 @@ setup(name = 'wdwapp',
         ],
     },
     #data_files = [
-	#	('alembic', glob('alembic/**/*', recursive=True)),
+	#	('alembic', glob('wdwapp/alembic/**/*', recursive=True)),
 	#],
 )
 

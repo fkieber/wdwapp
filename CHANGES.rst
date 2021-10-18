@@ -1,19 +1,21 @@
 Change log
 ----------
 
-- **0.1.2** 2021/10/16
-	- Change display order in overview
-	- Correction of description doc type in setup.py
-	- Correction of URL to https
-	- Update version in __init__.py
-	
+- **0.1.3** 2021/10/16
+
+    - Change display order in overview.
+    - Correction of URL to https.
+    - Correction of reStructuredText syntax errors.
+    - Add alembic versions files.
+    - Add alembic database update script.
+
 - **0.1.0** 2021/10/15
-	
-	- Add two year digit in date of detail.
-	- Add battery life data (last change, number of change).
-	- Add display of battery level as a icon.
-	- Add display of accuracy of data. If data is up to date as a icon.
-	- Add new config value " in .ini file 
+
+    - Add two year digit in date of detail.
+    - Add battery life data (last change, number of change).
+    - Add display of battery level as a icon.
+    - Add display of accuracy of data. If data is up to date as a icon.
+    - Add new config value " in .ini file.
 
 - **0.0.8** 2018/02/28
 
@@ -23,9 +25,9 @@ Change log
     - Detect and send alarms only every wd.interval.
       
     Corrections :
+    
     - When new sensor is detected save first data received.
-    - Internal Server Error after lost MySql connection due to interactive
-      timeout.
+    - Internal Server Error after lost MySql connection due to interactive timeout.
       Resolved by adding pool_pre_ping=True to create_engine.
 
 - **0.0.7** 2017/12/28
@@ -45,7 +47,7 @@ Change log
 
 - **0.0.4** 2017/12/25
 
-	- Remove return value.
+    - Remove return value.
     - Change logging system to manage different levels (debug, error, warning,
       etc.). In this way, for example, warnings can be send by mail from cron.
       This implies mail option from log() have been removed.
@@ -55,9 +57,9 @@ Change log
 
 - **0.0.3** 2017/12/22
 
-	- Rounding results to avoid truncate warning during database update.
+    - Rounding results to avoid truncate warning during database update.
     - Avoid to insert already existing weather data.
 
 - **0.0.1** 2017/12/21
 
-	First version.
+    First version.

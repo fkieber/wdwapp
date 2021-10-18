@@ -1,4 +1,4 @@
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 __year__ = 2021
 
 def main(global_config, **settings):

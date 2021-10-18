@@ -10,7 +10,6 @@ To do
   http://static.frkb.fr/wdwapp
 - Add .ini parameter to define period of detail view.
 """
-import pdb
 import colander
 import deform.widget
 
@@ -80,7 +79,6 @@ class WeatherViews(object):
 
         # Get last reading time
         lt = DBSession.query(func.max(WeatherData.timestp))
-        #pdb.set_trace()
         ltime = lt[0][0].strftime('%d %b à %H:%M')
         
         # Calculate max oldest data
